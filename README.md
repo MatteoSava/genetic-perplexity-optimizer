@@ -34,7 +34,7 @@ training a model from scratch.
 - `genetic/config.yaml`: Weights & Biases sweep configuration
 - `scripts/download_gemma.py`: downloads the Gemma model into a Modal volume
 - `scripts/train_modal.py`: launches the optimizer on Modal GPU infrastructure
-- `data/sample_submission.csv`: Kaggle sample submission format
+- `data.dvc`: DVC pointer for the Kaggle sample and experiment input files
 
 ## Perplexity
 
@@ -54,6 +54,12 @@ Install dependencies with uv:
 uv sync --locked
 ```
 
+Restore DVC-managed data if a remote has been configured:
+
+```bash
+uv run dvc pull
+```
+
 Run the local entrypoint:
 
 ```bash
@@ -67,6 +73,22 @@ MODEL_NAME = "/modal/google/gemma-2-9b/"
 ```
 
 Change that path before local execution if the model is stored somewhere else.
+
+## Data Versioning
+
+The `data/` directory is managed by DVC instead of Git. The repository keeps the
+data checksum and metadata in `data.dvc`, while `.gitignore` prevents raw input
+files from being committed directly.
+
+Useful commands:
+
+```bash
+uv run dvc status
+uv run dvc add data
+```
+
+No DVC remote is configured in the repository. Configure one before relying on
+fresh clones to retrieve the data with `dvc pull`.
 
 ## Running On Modal
 

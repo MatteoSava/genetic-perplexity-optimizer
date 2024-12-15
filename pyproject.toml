@@ -15,7 +15,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "pyright==1.1.390",
+    "dvc==3.67.1",
     "ruff==0.8.2",
 ]
 
@@ -30,7 +30,7 @@ extend-exclude = [".venv"]
 line-length = 88
 indent-width = 4
 
-# Target Python 3.8+
+# Target Python 3.12 for lint rule compatibility.
 target-version = "py312"
 
 [tool.ruff.format]
@@ -53,4 +53,4 @@ convention = "google" # Use Google-style docstrings
 "__init__.py" = ["F401"] # Ignore unused imports in __init__.py files
 
 [tool.ruff.lint.isort]
-known-first-party = ["your_package_name"] # Replace with your package name
+known-first-party = ["genetic"]
