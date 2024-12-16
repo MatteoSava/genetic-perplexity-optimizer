@@ -4,9 +4,8 @@ import torch
 
 # Configuration
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-MODEL_NAME = "/modal/google/gemma-2-9b/"  # "gemma-2-9b"
-# SUBMISSION_FILE = "data/sample_submission.csv"
-SUBMISSION_FILE = "data/submission_run_x.csv"
+MODEL_NAME = "/modal/google/gemma-2-9b/"
+SUBMISSION_FILE = "data/sample_submission.csv"
 OUTPUT_FILE = "submission.csv"
 
 
