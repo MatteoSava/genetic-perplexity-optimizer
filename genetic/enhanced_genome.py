@@ -48,16 +48,14 @@ class EnhancedGeneticOptimizer:
     def calculate_genome_diversity(self, population):
         from itertools import combinations
 
-        total_similarity = 0
+        total_dissimilarity = 0
+        pairs = 0
         for genome1, genome2 in combinations(population, 2):
-            set1, set2 = set(genome1.sequence), set(genome2.sequence)
-            total_similarity += len(set1.intersection(set2)) / float(
-                len(set1.union(set2))
-            )
-        avg_similarity = total_similarity / (
-            len(population) * (len(population) - 1) / 2
-        )
-        diversity = 1 - avg_similarity  # Diversity = 1 - similarity
+            length = len(genome1.sequence)
+            matches = sum(a == b for a, b in zip(genome1.sequence, genome2.sequence))
+            total_dissimilarity += 1 - matches / length
+            pairs += 1
+        diversity = total_dissimilarity / pairs if pairs > 0 else 0
         wandb.log({f"Diversity {self.row_id}": diversity})
         return diversity
 
