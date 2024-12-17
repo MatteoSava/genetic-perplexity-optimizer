@@ -95,17 +95,8 @@ def train():
     }
 
     # Initialize wandb
-    wandb.init(project="santa-2024-keggle", config=hyperparams)
+    wandb.init(project="santa-2024-kaggle", config=hyperparams)
 
-    # Collect hyperparameters from wandb config
-    # hyperparams = {
-    #     "population_size": wandb.config.get("population_size", 150),
-    #     "elite_ratio": wandb.config.get("elite_ratio", 0.2),
-    #     "max_age": wandb.config.get("max_age", 30),
-    #     "generations": wandb.config.get("generations", 50),
-    #     "mutation_rate": wandb.config.get("mutation_rate", 0.8),
-    #     "tournament_size": wandb.config.get("tournament_size", 5),
-    # }
     generate_submission(hyperparams)
 
 

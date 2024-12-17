@@ -131,10 +131,6 @@ class EnhancedGeneticOptimizer:
         Evaluate the fitness of each genome based on perplexity (negative log-likelihood)
         using batched processing for improved performance.
         """
-        # Process genomes in batches with nested progress bar
-        # with tqdm(
-        #     total=len(genomes), desc="Evaluating fitness", position=1, leave=False
-        # ) as batch_pbar:
         for i in range(0, len(genomes), self.batch_size):
             batch_genomes = genomes[i : i + self.batch_size]
 
@@ -187,9 +183,6 @@ class EnhancedGeneticOptimizer:
             # Assign negative losses as fitness scores
             for genome, loss_val in zip(batch_genomes, sequence_losses):
                 genome.fitness = -loss_val.item()
-
-            # Update the progress bar
-            # batch_pbar.update(len(batch_genomes))
 
     def _initialize_population(self, words: List[str]) -> List[EnhancedGenome]:
         """
@@ -305,8 +298,6 @@ class EnhancedGeneticOptimizer:
             diversity = self.calculate_genome_diversity(population)
             self.calculate_fitness_variance(population)
             entropy = self.calculate_entropy(population)
-            # self.mutation_rate = self.adjust_mutation_rate(population)
-
             # Reinitialize part of the population if necessary
             population = self.reinitialize_population(population, diversity, entropy)
             # Update mutation rate
