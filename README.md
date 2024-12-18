@@ -38,6 +38,10 @@ This repository implements a **genetic algorithm** for the permutation search:
 
 Best public leaderboard score: **~350 perplexity** on the competition evaluation set.
 
+Fitness convergence across 55 W&B runs (lower = better, y-axis is negative log-loss):
+
+[![W&B fitness convergence](assets/wandb_fitness_convergence.png)](https://wandb.ai/mattsava-me/santa-2024-keggle/reports/Best-Fitness-4-24-12-07-20-36-09---VmlldzoxMDUwNDUwMw)
+
 Key hyperparameters from the best run:
 
 | Parameter | Value |
