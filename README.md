@@ -3,96 +3,100 @@
 Optimization project for Kaggle's
 [Santa 2024 - The Perplexity Permutation Puzzle](https://www.kaggle.com/competitions/santa-2024).
 
-The challenge gives short bags of holiday-themed words. The goal is to reorder
-each bag into a sequence that receives the lowest possible perplexity from the
-competition language model. Lower perplexity means the model considers the text
-more natural and more predictable.
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![uv](https://img.shields.io/badge/package%20manager-uv-8A2BE2)
+![Modal](https://img.shields.io/badge/compute-Modal%20H100-orange)
+
+## Problem
+
+The competition gives bags of holiday-themed words. The goal is to reorder each bag
+into a sentence that receives the **lowest possible perplexity** from a fixed reference
+language model. Lower perplexity means the model considers the text more natural.
+
+The search space is combinatorial: a 20-word bag has 20! ≈ 2.4 × 10¹⁸ possible
+orderings. Exhaustive search is intractable; good heuristics are necessary.
 
 ## Approach
 
-This repository implements a genetic algorithm for the permutation search:
+This repository implements a **genetic algorithm** for the permutation search:
 
-- represent each candidate sentence as a genome, i.e. one valid permutation of
-  the input words
-- score candidates by running them through a causal language model and using
-  negative loss as fitness
-- keep the best candidates with elitism and tournament selection
-- generate new candidates with duplicate-safe crossover and swap mutation
-- adapt mutation pressure with population diversity and entropy metrics
-- run larger experiments on Modal with a Gemma model mounted from a persistent
-  volume
+- Each candidate sentence is a *genome*: one valid permutation of the input words
+- Fitness is **negative cross-entropy loss** computed by running the genome through a
+  causal language model — no gradient, pure inference
+- Population is maintained with **elitism** (top-k always survive) and **tournament
+  selection**
+- New candidates are generated via **duplicate-safe ordered crossover**: the child
+  preserves a slice from parent 1 and fills the rest from parent 2 using a `Counter`
+  to respect word multiplicity
+- **Adaptive mutation pressure**: swap rate increases when population entropy or
+  positional diversity drops below threshold, preventing premature convergence
+- Large-scale runs execute on **Modal with an H100**, loading Gemma-2-9B from a
+  persistent volume to avoid repeated downloads
+- Experiment tracking and hyperparameter sweeps via **Weights & Biases**
 
-The implementation focuses on search quality and iteration speed rather than on
-training a model from scratch.
+## Results
+
+Best public leaderboard score: **~350 perplexity** on the competition evaluation set.
+
+Key hyperparameters from the best run:
+
+| Parameter | Value |
+|---|---|
+| Population size | 150 |
+| Elite ratio | 0.10 |
+| Generations | 125 |
+| Mutation rate (base) | 0.60 |
+| Tournament size | 8 |
+| Batch size (perplexity eval) | 256 |
 
 ## Project Layout
 
-- `genetic/enhanced_genome.py`: genetic optimizer, genome representation,
-  batched perplexity scoring, crossover, mutation, and diversity metrics
-- `genetic/main.py`: experiment entrypoint that loads data, model, tokenizer,
-  optimizer settings, and writes a Kaggle submission
-- `genetic/config.yaml`: Weights & Biases sweep configuration
-- `scripts/download_gemma.py`: downloads the Gemma model into a Modal volume
-- `scripts/train_modal.py`: launches the optimizer on Modal GPU infrastructure
-- `data.dvc`: DVC pointer for the Kaggle sample and experiment input files
+```
+genetic/
+  enhanced_genome.py   genetic optimizer: genome, batched perplexity scoring,
+                       crossover, mutation, diversity metrics
+  main.py              experiment entrypoint: loads data, model, tokenizer,
+                       runs optimizer, writes Kaggle submission
+  utils.py             device config, model path, seed
+  config.yaml          W&B Bayesian sweep configuration
+scripts/
+  download_gemma.py    downloads Gemma-2-9B into a Modal persistent volume
+  train_modal.py       launches the optimizer on Modal GPU infrastructure
+data.dvc               DVC pointer for Kaggle input files
+```
 
-## Perplexity
+## Setup
 
-Perplexity is a language-model metric derived from cross-entropy loss. In
-practice it answers: "How surprised is the model by this sequence of tokens?"
-For this challenge, a good word order is one that makes the holiday text look
-more likely under the reference language model, so the optimizer searches for
-permutations with lower perplexity.
-
-## Running Locally
-
-Requires Python 3.11 or newer.
-
-Install dependencies with uv:
+Requires Python 3.11+ and [uv](https://github.com/astral-sh/uv).
 
 ```bash
 uv sync --locked
 ```
 
-Restore DVC-managed data if a remote has been configured:
+Restore DVC-managed data (requires a configured remote):
 
 ```bash
 uv run dvc pull
 ```
 
-Run the local entrypoint:
+## Running Locally
+
+Set `MODEL_NAME` in `genetic/utils.py` to your local model path, then:
 
 ```bash
 uv run python -m genetic.main
 ```
 
-The default model path in `genetic/utils.py` is configured for the Modal volume:
+The default path (`/modal/google/gemma-2-9b/`) targets the Modal volume used during
+competition runs. For local execution with a Hugging Face download:
 
 ```python
-MODEL_NAME = "/modal/google/gemma-2-9b/"
+MODEL_NAME = "google/gemma-2-9b"
 ```
 
-Change that path before local execution if the model is stored somewhere else.
+## Running on Modal
 
-## Data Versioning
-
-The `data/` directory is managed by DVC instead of Git. The repository keeps the
-data checksum and metadata in `data.dvc`, while `.gitignore` prevents raw input
-files from being committed directly.
-
-Useful commands:
-
-```bash
-uv run dvc status
-uv run dvc add data
-```
-
-No DVC remote is configured in the repository. Configure one before relying on
-fresh clones to retrieve the data with `dvc pull`.
-
-## Running On Modal
-
-Create the required Modal secrets first:
+Create the required Modal secrets:
 
 - `huggingface-secret` with `HF_TOKEN`
 - `wandb-secret` for experiment tracking
@@ -107,4 +111,25 @@ Launch the optimization job:
 
 ```bash
 uv run modal run scripts/train_modal.py
+```
+
+## Hyperparameter Sweep
+
+A Bayesian sweep over population size, elite ratio, mutation rate, tournament size,
+max age, and number of generations is configured in `genetic/config.yaml`. Run it
+with:
+
+```bash
+uv run wandb sweep genetic/config.yaml
+uv run wandb agent <sweep-id>
+```
+
+## Data Versioning
+
+The `data/` directory is managed by DVC. The repository stores only the checksum in
+`data.dvc`; raw files are excluded from Git via `.gitignore`.
+
+```bash
+uv run dvc status
+uv run dvc add data
 ```
